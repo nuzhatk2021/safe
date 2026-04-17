@@ -2,8 +2,8 @@ import os
 from typing import Optional
 
 import gradio as gr
-from groq import Groq
 from dotenv import load_dotenv
+from groq import Groq
 
 load_dotenv()
 
@@ -13,11 +13,7 @@ if not GROQ_API_KEY:
 
 client = Groq(api_key=GROQ_API_KEY)
 
-
 def get_response(query: str, rag_context: str, web_context: str) -> str:
-    """
-    Generate a counselor-facing response using only the provided context.
-    """
     system_prompt = """You are Safe — a clinical assistant for crisis hotline counselors.
 You only respond based on the context provided. Never make up information.
 Always respond in this exact format:
@@ -49,11 +45,7 @@ Based only on the above context, provide guidance for the counselor."""
 
     return response.choices[0].message.content.strip()
 
-
 def run_safe_assistant(query: str, rag_context: str, web_context: str) -> str:
-    """
-    Wrapper for Gradio with basic error handling.
-    """
     try:
         cleaned_query = query.strip()
         cleaned_rag = rag_context.strip()
@@ -62,196 +54,151 @@ def run_safe_assistant(query: str, rag_context: str, web_context: str) -> str:
         if not cleaned_query:
             return "Please enter a counselor query."
 
-        return get_response(
-            query=cleaned_query,
-            rag_context=cleaned_rag,
-            web_context=cleaned_web,
-        )
+        return get_response(cleaned_query, cleaned_rag, cleaned_web)
     except Exception as exc:
         return f"Error: {exc}"
 
-
+# Cleaned up CSS (removed theme-toggle specific styles)
 CUSTOM_CSS = """
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root {
+    --bg-primary:
+        radial-gradient(circle at top left, rgba(14,165,233,0.10), transparent 28%),
+        radial-gradient(circle at top right, rgba(20,184,166,0.12), transparent 22%),
+        linear-gradient(180deg, #f8fbff 0%, #f4f7fb 50%, #eef3f9 100%);
+    --text-main: #0f172a;
+    --text-soft: #475569;
+    --text-muted: #64748b;
+    --surface: rgba(255, 255, 255, 0.9);
+    --surface-strong: rgba(255, 255, 255, 0.97);
+    --border: rgba(148, 163, 184, 0.22);
+    --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.08);
+    --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.05);
+    --input-bg: rgba(255, 255, 255, 0.92);
+    --input-border: #cbd5e1;
+    --button-text: #ffffff;
+    --hero-title: #0f172a;
+    --ring: rgba(14,165,233,0.18);
+}
 
 html, body, .gradio-container {
     margin: 0;
     padding: 0;
     min-height: 100%;
     font-family: 'Inter', sans-serif;
-    background:
-        radial-gradient(circle at top left, #1e293b 0%, transparent 30%),
-        radial-gradient(circle at top right, #0f766e 0%, transparent 25%),
-        linear-gradient(180deg, #0b1020 0%, #111827 100%);
-    color: #e5e7eb;
+    font-size: 16.5px;
+    color: var(--text-main);
+    background: var(--bg-primary);
 }
 
 .gradio-container {
     max-width: 100% !important;
-    padding: 32px 20px 40px !important;
+    padding: 28px 24px 40px !important;
 }
 
 .app-shell {
-    max-width: 1280px;
+    width: 100%;
+    max-width: 1380px;
     margin: 0 auto;
 }
 
 .hero {
-    background: linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(17, 24, 39, 0.78));
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 24px;
-    padding: 28px 28px 22px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.35);
-    backdrop-filter: blur(10px);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 28px;
+    padding: 32px;
+    box-shadow: var(--shadow-lg);
     margin-bottom: 20px;
-}
-
-.hero-badge {
-    display: inline-block;
-    padding: 6px 12px;
-    border-radius: 999px;
-    background: rgba(45, 212, 191, 0.12);
-    color: #99f6e4;
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    margin-bottom: 14px;
-    border: 1px solid rgba(45, 212, 191, 0.25);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
 }
 
 .hero h1 {
-    margin: 0;
-    font-size: 2.4rem;
-    line-height: 1.05;
+    font-size: clamp(2rem, 3vw, 3rem);
     font-weight: 800;
-    letter-spacing: -0.03em;
-    color: #f8fafc;
+    margin: 0;
+    color: var(--hero-title);
 }
 
 .hero p {
-    margin-top: 12px;
-    margin-bottom: 0;
-    max-width: 760px;
     font-size: 1rem;
-    line-height: 1.7;
-    color: #cbd5e1;
+    margin-top: 12px;
+    color: var(--text-soft);
 }
 
 .panel {
-    background: rgba(15, 23, 42, 0.78);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 24px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 22px;
     padding: 18px;
-    box-shadow: 0 18px 50px rgba(0,0,0,0.25);
+    box-shadow: var(--shadow-md);
+    height: 100%;
     backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
 }
 
 .section-title {
-    margin: 4px 0 14px 2px;
-    font-size: 0.95rem;
-    font-weight: 700;
-    color: #cbd5e1;
-    letter-spacing: 0.01em;
+    font-size: 1.05rem;
+    font-weight: 800;
+    margin-bottom: 14px;
+    color: var(--text-main);
 }
 
-.gr-box,
-.gr-textbox,
-.gr-button,
-.gr-markdown {
-    border-radius: 16px !important;
-}
-
-textarea,
-input {
-    font-size: 15px !important;
-}
-
-.gradio-container .gr-textbox,
-.gradio-container .gr-textbox textarea,
-.gradio-container .gr-textbox input {
-    background: rgba(15, 23, 42, 0.72) !important;
-    color: #f8fafc !important;
-    border-color: rgba(148, 163, 184, 0.22) !important;
-}
-
-.gradio-container .gr-textbox label,
-.gradio-container .gr-textbox .wrap label {
-    color: #dbeafe !important;
-    font-weight: 600 !important;
-}
-
-.gradio-container textarea::placeholder,
-.gradio-container input::placeholder {
-    color: #94a3b8 !important;
-}
-
-.gradio-container button.primary,
-.gradio-container .gr-button-primary {
-    background: linear-gradient(135deg, #14b8a6, #0ea5e9) !important;
-    border: none !important;
-    color: white !important;
+.gradio-container .gr-textbox label {
+    font-size: 1rem !important;
     font-weight: 700 !important;
-    box-shadow: 0 10px 25px rgba(14, 165, 233, 0.25);
+    color: var(--text-main) !important;
 }
 
-.gradio-container button.primary:hover,
-.gradio-container .gr-button-primary:hover {
-    filter: brightness(1.05);
-    transform: translateY(-1px);
-    transition: all 0.18s ease;
+.gradio-container textarea,
+.gradio-container input {
+    font-size: 16.5px !important;
+    line-height: 1.6 !important;
+    padding: 12px 14px !important;
+    border-radius: 14px !important;
+    background: var(--input-bg) !important;
+    color: var(--text-main) !important;
+    border: 1px solid var(--input-border) !important;
+    box-shadow: none !important;
 }
 
-.output-box textarea {
-    font-family: "Inter", sans-serif !important;
-    line-height: 1.65 !important;
+.gradio-container textarea:focus,
+.gradio-container input:focus {
+    border-color: #38bdf8 !important;
+    box-shadow: 0 0 0 4px var(--ring) !important;
+}
+
+.gradio-container button.primary {
+    font-size: 1rem;
+    font-weight: 800;
+    padding: 12px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #0ea5e9, #14b8a6) !important;
+    color: var(--button-text) !important;
+    border: none !important;
+    box-shadow: 0 12px 24px rgba(14, 165, 233, 0.20);
 }
 
 .footer-note {
-    margin-top: 14px;
-    color: #94a3b8;
-    font-size: 0.9rem;
-}
-
-@media (max-width: 900px) {
-    .hero h1 {
-        font-size: 1.9rem;
-    }
-
-    .gradio-container {
-        padding: 18px 12px 24px !important;
-    }
-
-    .hero,
-    .panel {
-        border-radius: 18px;
-    }
+    font-size: 0.95rem;
+    color: var(--text-muted);
 }
 """
 
-
 with gr.Blocks(
     title="Safe Clinical Assistant",
-    theme=gr.themes.Soft(
-        primary_hue="teal",
-        secondary_hue="slate",
-        neutral_hue="slate",
-    ),
+    theme=gr.themes.Soft(),
     css=CUSTOM_CSS,
 ) as demo:
     with gr.Column(elem_classes="app-shell"):
-        gr.HTML(
-            """
-            <div class="hero">
-                <div class="hero-badge">Safe • Clinical Assistant</div>
-                <h1>Support crisis counselors with structured, context-grounded guidance.</h1>
-                <p>
-                    Enter the counselor’s situation, supporting document context, and any live web
-                    context. The assistant will return a concise response in a strict clinical format.
-                </p>
-            </div>
-            """
-        )
+        # Removed THEME_TOGGLE_HTML
+        gr.HTML("""
+        <div class="hero">
+            <h1>Support crisis counselors with structured guidance.</h1>
+            <p>Provide context → get actionable response instantly.</p>
+        </div>
+        """)
 
         with gr.Row(equal_height=True):
             with gr.Column(scale=6):
@@ -260,46 +207,35 @@ with gr.Blocks(
 
                     query_input = gr.Textbox(
                         label="Counselor Query",
-                        placeholder="Example: Caller feels numb, detached, and says they are not fully present.",
                         lines=4,
                         value="caller feels numb and disconnected",
                     )
 
                     rag_input = gr.Textbox(
-                        label="Clinical Context from Documents (RAG)",
-                        placeholder="Paste grounded document context here...",
+                        label="Clinical Context",
                         lines=7,
-                        value="Grounding techniques help patients reconnect with the present moment.",
+                        value="Grounding techniques help reconnect to the present moment.",
                     )
 
                     web_input = gr.Textbox(
-                        label="Live Web Resources",
-                        placeholder="Paste relevant live web findings here...",
+                        label="Web Context",
                         lines=7,
-                        value="5-4-3-2-1 technique helps with dissociation by engaging the senses.",
+                        value="5-4-3-2-1 grounding technique engages senses.",
                     )
 
                     submit_btn = gr.Button("Generate Response", variant="primary")
 
             with gr.Column(scale=5):
                 with gr.Group(elem_classes="panel"):
-                    gr.HTML('<div class="section-title">Assistant Output</div>')
+                    gr.HTML('<div class="section-title">Output</div>')
 
                     output_box = gr.Textbox(
-                        label="Response",
                         lines=18,
                         interactive=False,
                         elem_classes="output-box",
-                        placeholder="The structured clinical response will appear here...",
                     )
 
-                    gr.HTML(
-                        """
-                        <div class="footer-note">
-                            Output format: TECHNIQUE • PHRASE • RISK • REASON
-                        </div>
-                        """
-                    )
+                    gr.HTML('<div class="footer-note">TECHNIQUE • PHRASE • RISK • REASON</div>')
 
         submit_btn.click(
             fn=run_safe_assistant,
