@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from sentence_transformers import SentenceTransformer
 from llama_index.core import SimpleDirectoryReader, VectorStoreIndex
 from llama_index.core.node_parser import SentenceSplitter
-from Typing import List
+from typing import List
 
 load_dotenv()
 
