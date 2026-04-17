@@ -1,69 +1,90 @@
-import os
 import faiss
 import numpy as np
 from pathlib import Path
 from dotenv import load_dotenv
 from sentence_transformers import SentenceTransformer
-from llama_index.core import SimpleDirectoryReader, VectorStoreIndex
+from llama_index.core import SimpleDirectoryReader
 from llama_index.core.node_parser import SentenceSplitter
-from typing import List
+from typing import List, Tuple, Optional
 
 load_dotenv()
 
-# Load embedding model
-embedder = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+# ---- Types ----
+FaissIndex = faiss.IndexFlatL2
+EmbeddingArray = np.ndarray
 
-# Storage for chunks and their text
-chunk_texts = []
-faiss_index = None
+# ---- Globals ----
+embedder: SentenceTransformer = SentenceTransformer(
+    "sentence-transformers/all-MiniLM-L6-v2"
+)
 
-def build_index(docs_folder="docs"):
+chunk_texts: List[str] = []
+faiss_index: Optional[FaissIndex] = None
+
+def build_index(docs_folder: str | Path = "docs") -> Tuple[FaissIndex, List[str]]:
     global faiss_index, chunk_texts
 
+    docs_path: Path = Path(docs_folder)
+
     print("Loading documents...")
-    docs = SimpleDirectoryReader(docs_folder).load_data()
+    docs = SimpleDirectoryReader(str(docs_path)).load_data()
 
     print("Chunking documents...")
-    splitter = SentenceSplitter(chunk_size=512, chunk_overlap=64)
+    splitter: SentenceSplitter = SentenceSplitter(
+        chunk_size=512,
+        chunk_overlap=64,
+    )
     nodes = splitter.get_nodes_from_documents(docs)
 
     print(f"Total chunks: {len(nodes)}")
 
-    # Embed each chunk
-    texts = [node.get_content() for node in nodes]
+    # Extract text
+    texts: List[str] = [node.get_content() for node in nodes]
     chunk_texts = texts
 
     print("Generating embeddings...")
-    embeddings = embedder.encode(texts, show_progress_bar=True)
-    embeddings = np.array(embeddings).astype("float32")
+    embeddings: EmbeddingArray = embedder.encode(
+        texts, show_progress_bar=True
+    )
+    embeddings = np.asarray(embeddings, dtype=np.float32)
 
     # Build FAISS index
-    dimension = embeddings.shape[1]
-    faiss_index = faiss.IndexFlatL2(dimension)
-    faiss_index.add(embeddings)
+    dimension: int = embeddings.shape[1]
+    index: FaissIndex = faiss.IndexFlatL2(dimension)
+    index.add(embeddings)
+
+    faiss_index = index
 
     print("Index built successfully!")
-    return faiss_index, chunk_texts
+    return index, chunk_texts
 
-def retrieve(query, top_k=3) -> List:
+def retrieve(query: str, top_k: int = 3) -> List[str]:
     global faiss_index, chunk_texts
 
     if faiss_index is None:
         build_index()
 
-    query_embedding = embedder.encode([query]).astype("float32")
+    assert faiss_index is not None  # for type checker
+
+    query_embedding: EmbeddingArray = embedder.encode([query])
+    query_embedding = np.asarray(query_embedding, dtype=np.float32)
+
+    distances: np.ndarray
+    indices: np.ndarray
     distances, indices = faiss_index.search(query_embedding, top_k)
 
-    results = []
+    results: List[str] = []
     for i in indices[0]:
-        if i < len(chunk_texts):
+        if 0 <= i < len(chunk_texts):
             results.append(chunk_texts[i])
 
     return results
 
 if __name__ == "__main__":
     build_index()
+
     print("\nTest retrieval:")
-    results = retrieve("caller feels numb and disconnected")
-    for i, r in enumerate(results):
-        print(f"\n--- Chunk {i+1} ---\n{r[:300]}")
+    results: List[str] = retrieve("caller feels numb and disconnected")
+
+    for i, r in enumerate(results, start=1):
+        print(f"\n--- Chunk {i} ---\n{r[:300]}")
