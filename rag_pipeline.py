@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from sentence_transformers import SentenceTransformer
 from llama_index.core import SimpleDirectoryReader, VectorStoreIndex
 from llama_index.core.node_parser import SentenceSplitter
+from Typing import List
 
 load_dotenv()
 
@@ -44,7 +45,7 @@ def build_index(docs_folder="docs"):
     print("Index built successfully!")
     return faiss_index, chunk_texts
 
-def retrieve(query, top_k=3):
+def retrieve(query, top_k=3) -> List:
     global faiss_index, chunk_texts
 
     if faiss_index is None:
